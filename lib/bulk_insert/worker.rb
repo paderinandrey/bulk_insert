@@ -7,7 +7,7 @@ module BulkInsert
     attr_accessor :adapter_name
     attr_reader :ignore, :update_duplicates, :result_sets
 
-    def initialize(connection, table_name, primary_key, column_names, set_size=500, ignore=false, update_duplicates=false, return_primary_keys=false)
+    def initialize(connection, table_name, primary_key, column_names, set_size=500, ignore=false, update_duplicates=false, return_primary_keys=false, return_keys=[])
       @connection = connection
       @set_size = set_size
 
@@ -89,8 +89,12 @@ module BulkInsert
 
     def execute_query
       if query = compose_insert_query
-        result_set = @connection.exec_query(query)
-        @result_sets.push(result_set) if @return_primary_keys
+        if @return_primary_keys
+          result_set = @connection.execute(query)
+          @result_sets += result_set.to_a
+        else
+          @connection.exec_query(query)
+        end
       end
     end
 
@@ -143,9 +147,22 @@ module BulkInsert
 
     def primary_key_return_statement
       if @return_primary_keys && adapter_name =~ /\APost(?:greSQL|GIS)/i
-        " RETURNING #{@primary_key}"
+        " RETURNING #{keys}"
       else
         ''
+      end
+    end
+
+    def keys
+      case return_keys
+      when Hash then
+        return_keys.map{ |k, v| "#{k} AS #{v.to_s}"}.join(', ')
+      when Array then
+        return_keys.join(', ')
+      when String then
+        return_keys
+      else
+        @primary_key
       end
     end
 
