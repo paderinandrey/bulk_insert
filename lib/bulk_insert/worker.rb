@@ -49,7 +49,9 @@ module BulkInsert
           if !value_exists
             if column.default.present?
               column.default
-            elsif column.name == "created_at" || column.name == "updated_at"
+            elsif column.name == "created_at" && update_duplicates == false
+              :__timestamp_placeholder
+            elsif column.name == "updated_at"
               :__timestamp_placeholder
             else
               nil
@@ -89,11 +91,8 @@ module BulkInsert
 
     def execute_query
       if query = compose_insert_query
-        if @return_primary_keys
-          result_set = @connection.execute(query)
-          @result_sets += result_set.to_a
-        else
-          @connection.exec_query(query)
+          result_set = @connection.exec_query(query)
+          @result_sets.push(result_set) if @return_primary_keys
         end
       end
     end
