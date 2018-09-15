@@ -5,6 +5,7 @@ module BulkInsert
     attr_accessor :before_save_callback
     attr_accessor :after_save_callback
     attr_accessor :adapter_name
+    attr_accessor :return_keys
     attr_reader :ignore, :update_duplicates, :result_sets
 
     def initialize(connection, table_name, primary_key, column_names, set_size=500, ignore=false, update_duplicates=false, return_primary_keys=false, return_keys=[])
@@ -21,6 +22,7 @@ module BulkInsert
       column_map = columns.inject({}) { |h, c| h.update(c.name => c) }
 
       @primary_key = primary_key
+      @return_keys = return_keys
       @columns = column_names.map { |name| column_map[name.to_s] }
       @table_name = connection.quote_table_name(table_name)
       @column_names = column_names.map { |name| connection.quote_column_name(name) }.join(",")
